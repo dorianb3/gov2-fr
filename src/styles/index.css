@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- RESET ROOT COLORS --- */
+@layer base {
+  :root {
+    /* LIGHT MODE (optionnel) */
+    --background: 0 0% 98%; /* blanc légèrement cassé */
+    --foreground: 222 84% 6%; /* quasi noir */
+
+    --card: 0 0% 100%; /* card light */
+    --card-foreground: 222 84% 6%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 84% 6%;
+
+    --primary: 210 100% 40%; /* bleu civic */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 20% 92%;
+    --secondary-foreground: 222 84% 6%;
+
+    --muted: 210 20% 92%;
+    --muted-foreground: 222 10% 40%;
+
+    --accent: 210 20% 92%;
+    --accent-foreground: 222 84% 6%;
+
+    --destructive: 0 80% 55%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 210 80% 40%;
+
+    --radius: 0.5rem;
+  }
+
+  /* --- DARK MODE THEME (ton vrai thème) --- */
+  .dark {
+    --background: 210, 10%, 8%; /*  */
+    --foreground: 210 40% 98%; /* blanc lisible */
+
+    --card: 0 0% 10%; /* #171717 */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 220 90% 60%; /* bleu néon civic-tech */
+    --primary-foreground: 222 84% 3%;
+
+    --secondary: 0 0% 6%; /* #0A0A0A */
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 0 0% 12%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 0 0% 20%; /* #333 */
+    --input: 0 0% 20%;
+    --ring: 220 70% 55%;
+
+    /* Graphiques dashboards */
+    --chart-1: 195 80% 60%;
+    --chart-2: 155 60% 50%;
+    --chart-3: 45 90% 60%;
+    --chart-4: 260 65% 60%;
+    --chart-5: 340 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
