@@ -17,9 +17,9 @@ export default function Navbar() {
   const navItems = [
     { label: "Agora", to: "/agora" },
     { label: "Activités", to: "/activity" },
-    { label: "Infos", to: "/" },
-    { label: "Données", to: "/" },
-    { label: "A propos", to: "/" },
+    { label: "Infos", to: "/news" },
+    { label: "Données", to: "/data" },
+    { label: "A propos", to: "/about" },
   ]
 
   return (
