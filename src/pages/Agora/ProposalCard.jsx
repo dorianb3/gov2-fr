@@ -1,16 +1,20 @@
 // src/pages/Agora/ProposalCard.jsx
 import { Star } from "lucide-react";
 import RelationsGraphMini from "./RelationsGraphMini";
+import LikeButton from "@/components/common/LikeButton";
+import FollowButton from "@/components/common/FollowButton";
+import { Link } from "react-router-dom";
 
 export default function ProposalCard({
   proposal,
   scores,
   relations,
   versionsMeta,
+  // followersCount,
   creator,
   reputation,
-  isFollowing,
-  onToggleFollow,
+  // isFollowing,
+  // onToggleFollow,
   onNavigate,
   onOpenVote,
   onOpenReview,
@@ -32,7 +36,7 @@ export default function ProposalCard({
   const statusLabel = proposal.status || "draft";
 
   return (
-    <div className="border border-border/60 rounded px-3 py-2 text-xs flex flex-col gap-2 bg-card/80">
+    <div className="border border-border/60 rounded px-3 py-2 text-xs flex flex-col gap-2 bg-background">
       {/* Ligne statut + auteur */}
       <div className="flex w-full justify-between items-center gap-2">
         <span className="w-fit text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border border-border/60 text-muted-foreground">
@@ -48,7 +52,12 @@ export default function ProposalCard({
 
           {creator && (
             <div className="flex flex-col items-end">
-              <div className="text-[11px] font-medium">@{creator.username}</div>
+              <Link
+                to={`/profile/${creator.id}`}
+                className="text-[11px] font-medium hover:underline"
+              >
+                @{creator.username}
+              </Link>
               <div className="text-[10px] text-muted-foreground">
                 Réputation : {reputation}
               </div>
@@ -60,27 +69,14 @@ export default function ProposalCard({
       {/* Ligne titre + actions principales */}
       <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
         <div className="flex-1">
-          <div className="flex gap-2 items-start">
-            {/* Follow */}
-            <button
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary mt-[1px]"
-              onClick={onToggleFollow}
-            >
-              <Star
-                className={`w-3 h-3 ${
-                  isFollowing ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
-                }`}
-              />
-            </button>
+          {/* Titre cliquable */}
+          <button
+            onClick={onNavigate}
+            className="font-semibold text-left hover:underline text-sm"
+          >
+            {proposal.title}
+          </button>
 
-            {/* Titre cliquable */}
-            <button
-              onClick={onNavigate}
-              className="font-semibold text-left hover:underline text-sm"
-            >
-              {proposal.title}
-            </button>
-          </div>
 
           {/* Objectifs / portée */}
           {proposal.objectives && (
@@ -166,17 +162,19 @@ export default function ProposalCard({
 
       {/* Actions rapides */}
       <div className="mt-1 flex flex-wrap gap-2 text-[10px]">
+        <FollowButton targetType="proposal" targetId={proposal.id} size="xs" />
+        <LikeButton targetType="proposal" targetId={proposal.id} size="sm" variant="ghost"/>
         <button
           className="px-2 py-1 border border-border/60 rounded hover:bg-accent"
           onClick={onOpenVote}
         >
-          Donner mon vote
+          Voter
         </button>
         <button
           className="px-2 py-1 border border-border/60 rounded hover:bg-accent"
           onClick={onOpenReview}
         >
-          Laisser une review
+          Laisser une revue
         </button>
         <button
           className="px-2 py-1 border border-border/60 rounded hover:bg-accent"
@@ -188,7 +186,7 @@ export default function ProposalCard({
           className="px-2 py-1 border border-border/60 rounded hover:bg-accent"
           onClick={onFork}
         >
-          Forker cette proposition
+          Créer une variante
         </button>
       </div>
     </div>

@@ -1,4 +1,3 @@
-// src/components/proposals/ProposalVersionsPanel.jsx
 import {
   Card,
   CardHeader,
@@ -9,18 +8,28 @@ import {
 import { Button } from "@/components/ui/button";
 import VersionDiffDialog from "@/components/proposals/VersionDiffDialog";
 import { useState } from "react";
+import { Eye, FileDiff  } from "lucide-react";
 
 export default function ProposalVersionsPanel({
   versions,
   currentContentSnapshot,
   formatDateTime,
+  onRestoreVersion,
 }) {
   const [selectedVersion, setSelectedVersion] = useState(null);
-  const [diffOpen, setDiffOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogInitialTab, setDialogInitialTab] = useState("view"); // "view" | "diff"
+
+  const handleOpenView = (version) => {
+    setSelectedVersion(version);
+    setDialogInitialTab("view");
+    setDialogOpen(true);
+  };
 
   const handleOpenDiff = (version) => {
     setSelectedVersion(version);
-    setDiffOpen(true);
+    setDialogInitialTab("diff");
+    setDialogOpen(true);
   };
 
   return (
@@ -41,30 +50,26 @@ export default function ProposalVersionsPanel({
           {versions.map((v) => (
             <div
               key={v.id}
-              className="bg-neutral-950 border border-neutral-800 p-3 rounded-md space-y-2"
+              className="bg-neutral-950 border border-neutral-800 p-3 rounded-md  flex justify-between items-center"
             >
-              <div className="flex justify-between items-center text-xs text-neutral-400">
-                <span>Version {v.version_number}</span>
+              <div className=" text-xs text-neutral-400">
+                <span>Version {v.version_number} - </span>
                 <span>{formatDateTime(v.created_at)}</span>
               </div>
-              <p className="text-xs text-neutral-200 whitespace-pre-line line-clamp-4">
-                {v.content}
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  onClick={() => setSelectedVersion(v)}
+
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-1.5 py-1 bg-card rounded"
+                  onClick={() => handleOpenView(v)}
                 >
-                  Voir la version
-                </Button>
-                <Button
-                  size="xs"
-                  variant="outline"
+                  <Eye size={16}/>
+                </button>
+                <button
+                  className="px-1.5 py-1 bg-card rounded"
                   onClick={() => handleOpenDiff(v)}
                 >
-                  Voir les différences
-                </Button>
+                  <FileDiff size={16}/>
+                </button>
               </div>
             </div>
           ))}
@@ -73,10 +78,13 @@ export default function ProposalVersionsPanel({
 
       {selectedVersion && (
         <VersionDiffDialog
-          open={diffOpen}
-          onOpenChange={setDiffOpen}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
           version={selectedVersion}
           currentSnapshot={currentContentSnapshot}
+          initialTab={dialogInitialTab}
+          onRestoreVersion={onRestoreVersion} 
+          isLatest={selectedVersion?.version_number === versions[0]?.version_number}
         />
       )}
     </>

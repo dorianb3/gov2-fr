@@ -51,6 +51,19 @@ export default function UserMenu() {
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
+        
+        <DropdownMenuItem>
+          {/* ... autres éléments du menu ... */}
+          <Link
+            to="/profile"
+            className="block text-sm py-1 px-2 hover:bg-accent rounded"
+          >
+            Mon profil
+          </Link>
+          {/* ... */}
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
 
         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
           Logout

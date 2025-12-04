@@ -91,3 +91,17 @@ export async function getMyFollows() {
   }
   return data;
 }
+
+export async function getFollowersCount(targetType, targetId) {
+  const { count, error } = await supabase
+    .from("follows")
+    .select("id", { count: "exact", head: true })
+    .eq("target_type", targetType)
+    .eq("target_id", targetId);
+
+  if (error) {
+    console.error("getFollowersCount error:", error);
+    return 0;
+  }
+  return count || 0;
+}

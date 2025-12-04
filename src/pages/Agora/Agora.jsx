@@ -1,12 +1,16 @@
 // src/pages/Agora/Agora.jsx
 import { useEffect, useState, useMemo } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 
 // UI
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ChevronRight, ChevronDown, Plus, Star } from "lucide-react";
+
+import FollowButton from "@/components/common/FollowButton";
+import LikeButton from "@/components/common/LikeButton";
+
 
 // Supabase (uniquement pour les stats globales)
 import { supabase } from "../../supabase/client";
@@ -35,6 +39,7 @@ import {
   getMyFollows,
   follow as followEntity,
   unfollow as unfollowEntity,
+  getFollowersCount,
 } from "../../services/followsService";
 
 // Modals
@@ -73,6 +78,7 @@ export default function Agora() {
   const [proposalScores, setProposalScores] = useState({}); // proposal_id -> scores view
   const [proposalVersionsMeta, setProposalVersionsMeta] = useState({}); // proposal_id -> { count, latestVersionNumber }
   const [proposalRelationsMeta, setProposalRelationsMeta] = useState({}); // proposal_id -> relations
+  const [proposalFollowersMeta, setProposalFollowersMeta] = useState({}); 
 
   // Créateurs & réputation
   const [issueCreators, setIssueCreators] = useState({}); // user_id -> profile
@@ -368,6 +374,7 @@ export default function Agora() {
       /* ---------- Versions & Relations (forks, alternatives, supersedes) ---------- */
       const versionsMeta = {};
       const relationsMeta = {};
+      const followersMeta = {};
 
       await Promise.all(
         (proposalsData || []).map(async (p) => {
@@ -444,11 +451,22 @@ export default function Agora() {
               supersededBy: false,
             };
           }
+
+          // Followers count
+          try {
+            const followersCount = await getFollowersCount("proposal", p.id);
+            followersMeta[p.id] = followersCount;
+          } catch (e) {
+            console.error("Error loading followers count", p.id, e);
+            followersMeta[p.id] = 0;
+          }
+     
         })
       );
 
       setProposalVersionsMeta(versionsMeta);
       setProposalRelationsMeta(relationsMeta);
+      setProposalFollowersMeta(followersMeta);
     } finally {
       setLoadingTopic(false);
     }
@@ -752,7 +770,17 @@ export default function Agora() {
                 <div className="flex flex-col items-start gap-3 px-4 pt-3 pb-2 text-xs border-b bg-muted/40">
                   <div className="flex flex-col w-full">
                     <div className="text-[11px] text-muted-foreground w-full flex justify-end">
-                      Par : {issueCreatorName}
+                      Par :{" "}
+                      {issueAuthorProfile ? (
+                        <Link
+                          to={`/profile/${issueAuthorProfile.id}`}
+                          className="ml-1 hover:underline text-foreground/90"
+                        >
+                          @{issueAuthorProfile.username}
+                        </Link>
+                      ) : (
+                        <span className="ml-1">{issueCreatorName}</span>
+                      )}
                     </div>
                     <span className="font-medium text-sm truncate">{issue.title}</span>
                     <span className="text-[11px] text-muted-foreground">
@@ -760,7 +788,7 @@ export default function Agora() {
                     </span>
                   </div>
 
-                  <div className="flex gap-3 items-center justify-between w-full">
+                  <div className="flex gap-3 items-center justify-between flex-wrap w-full">
                     <div className="flex gap-3 items-center">
                       <button
                         className="flex justify-center items-start"
@@ -784,28 +812,18 @@ export default function Agora() {
                         <div className="text-xs font-semibold">{totalVotes}</div>
                         <div className="text-[10px] text-muted-foreground">votes</div>
                       </div>
+
+                      <FollowButton targetType="issue" targetId={issue.id} size="xs" />
+                      <LikeButton targetType="issue" targetId={issue.id} size="xs" variant="ghost"/>
+
                     </div>
 
                     {/* CTA */}
                     <div className="text-right flex items-center gap-2">
                       {currentUser && (
                         <Button size="sm" variant="outline" onClick={() => openProposalModal(issue.id)}>
-                          <Plus className="w-3 h-3 mr-1" /> Proposer
+                          <Plus className="w-3 h-3 mr-1" /> Faire une proposition
                         </Button>
-                      )}
-                      {currentUser && (
-                        <button
-                          className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary"
-                          onClick={() => toggleFollow("issue", issue.id)}
-                        >
-                          <Star
-                            className={`w-3 h-3 ${
-                              following.issue[issue.id]
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-muted-foreground"
-                            }`}
-                          />
-                        </button>
                       )}
                     </div>
                   </div>
@@ -835,10 +853,11 @@ export default function Agora() {
                           scores={scores}
                           relations={relations}
                           versionsMeta={versionsMeta}
+                          // followersCount={proposalFollowersMeta[p.id] || 0}
                           creator={creator}
                           reputation={rep}
-                          isFollowing={isFollowingProposal}
-                          onToggleFollow={() => toggleFollow("proposal", p.id)}
+                          // isFollowing={isFollowingProposal}
+                          // onToggleFollow={() => toggleFollow("proposal", p.id)}
                           onNavigate={() => navigate(`/proposals/${p.id}`)}
                           onOpenVote={() => openVoteModalForProposal(p.id)}
                           onOpenReview={() => openReviewModalForProposal(p.id)}

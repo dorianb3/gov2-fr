@@ -3,36 +3,26 @@ import { supabase } from "../supabase/client";
 
 /**
  * Renvoie tous les liens associés à une proposition
- * (source OU target)
+ * (avec jointure sur les propositions source / target)
  */
-// export async function getProposalLinks(proposalId) {
-//   const { data, error } = await supabase
-//     .from("proposal_links")
-//     .select("*")
-//     .or(`source_id.eq.${proposalId},target_id.eq.${proposalId}`);
-
-//   console.log("getProposalLinks => data", data)
-//   if (error) {
-//     console.error("getProposalLinks error:", error);
-//     throw error;
-//   }
-//   return data;
-// }
 export async function getProposalLinks(proposalId) {
   const { data, error } = await supabase
     .from("proposal_links")
     .select(`
       *,
       source:source_id (
-        id, title
+        id, title, status, created_at
       ),
       target:target_id (
-        id, title
+        id, title, status, created_at
       )
     `)
     .or(`source_id.eq.${proposalId},target_id.eq.${proposalId}`);
 
-  if (error) throw error;
+  if (error) {
+    console.error("getProposalLinks error:", error);
+    throw error;
+  }
   return data;
 }
 
@@ -76,7 +66,10 @@ export async function linkAsSupersedes(newProposalId, oldProposalId) {
 export async function getForksOfProposal(originalId) {
   const { data, error } = await supabase
     .from("proposal_links")
-    .select("source_id")
+    .select(`
+      source_id,
+      source:source_id (id, title, status, created_at)
+    `)
     .eq("relation", "fork")
     .eq("target_id", originalId);
 
@@ -85,7 +78,8 @@ export async function getForksOfProposal(originalId) {
     throw error;
   }
 
-  return data?.map((row) => row.source_id) ?? [];
+  // on retourne directement les propositions enfants
+  return data?.map((row) => row.source) ?? [];
 }
 
 /**
@@ -94,7 +88,10 @@ export async function getForksOfProposal(originalId) {
 export async function getForkParent(proposalId) {
   const { data, error } = await supabase
     .from("proposal_links")
-    .select("target_id")
+    .select(`
+      target_id,
+      parent:target_id (id, title, status, created_at)
+    `)
     .eq("relation", "fork")
     .eq("source_id", proposalId)
     .maybeSingle();
@@ -104,23 +101,36 @@ export async function getForkParent(proposalId) {
     throw error;
   }
 
-  return data?.target_id ?? null;
+  return data?.parent ?? null;
 }
-
-
 
 /**
  * Crée un lien générique entre deux propositions
- * relation ∈ ['fork', 'alternative', 'supersedes', 'superseded_by']
+ * - accepte soit (sourceId, targetId, relation)
+ * - soit un objet { source_id, target_id, relation }
  */
-export async function createProposalLink(sourceId, targetId, relation) {
+export async function createProposalLink(arg1, arg2, arg3) {
+  let payload;
+
+  if (typeof arg1 === "object" && arg1 !== null) {
+    // Signature objet
+    payload = {
+      source_id: arg1.source_id,
+      target_id: arg1.target_id,
+      relation: arg1.relation,
+    };
+  } else {
+    // Signature (sourceId, targetId, relation)
+    payload = {
+      source_id: arg1,
+      target_id: arg2,
+      relation: arg3,
+    };
+  }
+
   const { data, error } = await supabase
     .from("proposal_links")
-    .insert({
-      source_id: sourceId,
-      target_id: targetId,
-      relation,
-    })
+    .insert(payload)
     .select()
     .maybeSingle();
 

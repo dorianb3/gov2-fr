@@ -51,3 +51,17 @@ export async function getActivityForUser(userId) {
   }
   return data;
 }
+
+/**
+ * Activité enrichie (timeline lisible)
+ */
+export async function getRecentActivityEnriched(limit = 50) {
+  const { data, error } = await supabase
+    .from("activity_enriched_view")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data;
+}

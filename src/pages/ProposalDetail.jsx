@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 
 // Composants existants
 import FlagButton from "@/components/common/FlagButton";
-import ProposalStatusControl from "@/components/proposals/ProposalStatusControl";
 import AggregateScore from "@/components/votes/AggregateScore";
 // import ProposalModal from "@/components/modals/ProposalModal";
 import ProposalModal from "@/components/proposal-modal/ProposalModal";
@@ -34,10 +33,13 @@ import { getProfile } from "@/services/profilesService";
 import { getReputation } from "@/services/reputationService";
 import {
   getProposalVersions,
+  restoreProposalVersion,
 } from "@/services/proposalVersionsService";
 import {
   getProposalLinks,
   createProposalLink,
+  linkAsAlternative,
+  linkAsSupersedes,
 } from "@/services/proposalLinksService";
 import { getVotesForProposal } from "@/services/votesService";
 import {
@@ -225,14 +227,16 @@ export default function ProposalDetail() {
 
       // -------- FORKS --------
       if (link.relation === "fork") {
-        // parent = la proposition dont current est la variante
-        if (link.target_id === currentId && source) {
-          result.parent = source;
+        // Schéma : source = enfant (fork), target = parent (original)
+
+        // 1) Si current = enfant → parent = target
+        if (link.source_id === currentId && target) {
+          result.parent = target;
         }
 
-        // forks = les variantes dérivées de current
-        if (link.source_id === currentId && target) {
-          result.forks.push(target);
+        // 2) Si current = parent → forks = tous les enfants (source)
+        if (link.target_id === currentId && source) {
+          result.forks.push(source);
         }
       }
 
@@ -246,13 +250,16 @@ export default function ProposalDetail() {
       // -------- SUPERSEDES --------
       if (link.relation === "supersedes") {
         if (link.source_id === currentId && target) {
+          // current remplace target
           result.supersedes.push(target);
         } else if (link.target_id === currentId && source) {
+          // source remplace current
           result.supersededBy.push(source);
         }
       }
 
       // -------- SUPERSEDED_BY --------
+      // (optionnel : si tu stockes aussi ce type dans la table)
       if (link.relation === "superseded_by") {
         if (link.source_id === currentId && target) {
           result.supersededBy.push(target);
@@ -298,13 +305,13 @@ export default function ProposalDetail() {
   }
 
   // ----------------------------------------------------------
-  // Actions : review
+  // Actions : revue
   // ----------------------------------------------------------
   async function handleSubmitReview(reviewPayload) {
     if (!currentUser) {
       toast({
         title: "Connexion requise",
-        description: "Tu dois être connecté pour publier une review.",
+        description: "Tu dois être connecté pour publier une revue.",
         variant: "destructive",
       });
       return;
@@ -318,8 +325,8 @@ export default function ProposalDetail() {
       });
 
       toast({
-        title: "Review publiée",
-        description: "Merci pour ta contribution.",
+        title: "Revue publiée",
+        description: "Merci pour votre contribution.",
       });
 
       const updated = await getReviewsForProposal(proposalId);
@@ -328,7 +335,7 @@ export default function ProposalDetail() {
       console.error("Error creating review:", err);
       toast({
         title: "Erreur",
-        description: "Impossible d'enregistrer ta review.",
+        description: "Impossible d'enregistrer votre revue.",
         variant: "destructive",
       });
     }
@@ -341,7 +348,7 @@ export default function ProposalDetail() {
     if (!currentUser) {
       toast({
         title: "Connexion requise",
-        description: "Tu dois être connecté pour commenter.",
+        description: "Vous devez être connecté pour commenter.",
         variant: "destructive",
       });
       return;
@@ -372,7 +379,7 @@ export default function ProposalDetail() {
       console.error("Error creating comment:", err);
       toast({
         title: "Erreur",
-        description: "Impossible d'envoyer ton commentaire.",
+        description: "Impossible d'envoyer votre commentaire.",
         variant: "destructive",
       });
     }
@@ -382,12 +389,60 @@ export default function ProposalDetail() {
   // Actions : ajout de relation
   // ----------------------------------------------------------
   async function handleCreateRelation({ targetProposalId, relation }) {
-    try {
-      await createProposalLink({
-        source_id: proposalId,
-        target_id: targetProposalId,
-        relation,
+    if (!targetProposalId || !relation) {
+      toast({
+        title: "Relation invalide",
+        description: "Choisissez une proposition et un type de relation.",
+        variant: "destructive",
       });
+      return;
+    }
+
+    if (targetProposalId === proposalId) {
+      toast({
+        title: "Relation impossible",
+        description: "Une proposition ne peut pas être liée à elle-même.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // On normalise la façon dont on écrit dans la table
+      switch (relation) {
+        case "alternative":
+          // alternative symétrique
+          await linkAsAlternative(proposalId, targetProposalId);
+          break;
+
+        case "supersedes":
+          // current (proposalId) remplace targetProposalId
+          await linkAsSupersedes(proposalId, targetProposalId);
+          break;
+
+        case "superseded_by":
+          // targetProposalId remplace current
+          await linkAsSupersedes(targetProposalId, proposalId);
+          break;
+
+        case "fork":
+          // On considère ici que current = parent, target = enfant
+          await createProposalLink({
+            source_id: targetProposalId, // enfant
+            target_id: proposalId,       // parent
+            relation: "fork",
+          });
+          break;
+
+        default:
+          // fallback générique si un autre type arrive un jour
+          await createProposalLink({
+            source_id: proposalId,
+            target_id: targetProposalId,
+            relation,
+          });
+          break;
+      }
 
       toast({
         title: "Relation créée",
@@ -405,6 +460,7 @@ export default function ProposalDetail() {
       });
     }
   }
+
 
   // ----------------------------------------------------------
   // Actions : après vote / status / edit / fork
@@ -429,6 +485,37 @@ export default function ProposalDetail() {
   async function handleAfterEditOrFork() {
     setEditMode(null);
     await loadAll(proposalId);
+  }
+
+  // ----------------------------------------------------------
+  // Actions : restauration de version
+  // ----------------------------------------------------------
+  async function handleRestoreVersion(versionId) {
+    const confirmed = window.confirm(
+      "Restaurer cette version va remplacer le contenu actuel de la proposition par l'instantané de cette version. Continuer ?"
+    );
+    if (!confirmed) return;
+
+    try {
+      await restoreProposalVersion(versionId);
+
+      toast({
+        title: "Version restaurée",
+        description:
+          "La proposition a été restaurée à partir de cette version. Une nouvelle entrée d’historique a été créée.",
+      });
+
+      // On recharge toutes les données (proposal + versions + scores…)
+      await loadAll(proposalId);
+    } catch (err) {
+      console.error("Error restoring version:", err);
+      toast({
+        title: "Erreur",
+        description:
+          "Impossible de restaurer cette version pour le moment.",
+        variant: "destructive",
+      });
+    }
   }
 
   // ----------------------------------------------------------
@@ -494,8 +581,8 @@ export default function ProposalDetail() {
             creator={creator}
             creatorReputation={creatorReputation}
             userRole={userRole}
-            isFollowing={isFollowing}
-            onToggleFollow={handleToggleFollow}
+            // isFollowing={isFollowing}
+            // onToggleFollow={handleToggleFollow}
             formatDateTime={formatDateTime}
             flagsCount={flagsCount}
             proposalId={proposalId}
@@ -503,6 +590,7 @@ export default function ProposalDetail() {
             onEdit={() => setEditMode("edit")}
             onFork={() => setEditMode("fork")}
             onOpenRelationDialog={() => setRelationDialogOpen(true)}
+            currentUser={currentUser}
           />
 
           <div className="mt-4 flex gap-4">
@@ -586,8 +674,18 @@ export default function ProposalDetail() {
             title: proposal.title,
             objectives: proposal.objectives,
             content: proposal.content,
+            actions: proposal.actions,
+            means: proposal.means,
+            timeline: proposal.timeline,
+            risks: proposal.risks,
+            territorial_scope: proposal.territorial_scope,
+            target_populations: proposal.target_populations,
+            impact_expected: proposal.impact_expected,
+            estimated_cost: proposal.estimated_cost,
+            data_sources: proposal.data_sources,
           }}
           formatDateTime={formatDateTime}
+          onRestoreVersion={handleRestoreVersion}
         />
 
         <ProposalHistoryPanel
@@ -595,6 +693,7 @@ export default function ProposalDetail() {
           formatDateTime={formatDateTime}
         />
       </div>
+
 
       {/* ---------------------------------------------- */}
       {/* Modale de création / édition / fork de proposal */}

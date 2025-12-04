@@ -1,4 +1,5 @@
 // src/components/proposals/ProposalRelationsPanel.jsx
+import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,7 +10,17 @@ import { useEffect, useState } from "react";
 import { searchProposalsByIssue } from "@/services/proposalsService"; // à adapter si besoin
 
 function RelationsMiniGraph({ currentProposal, links }) {
-  // Simple mini-graphe horizontal
+  const forks = Array.isArray(links?.forks) ? links.forks : [];
+  const alternatives = Array.isArray(links?.alternatives)
+    ? links.alternatives
+    : [];
+  const supersedes = Array.isArray(links?.supersedes)
+    ? links.supersedes
+    : [];
+  const supersededBy = Array.isArray(links?.supersededBy)
+    ? links.supersededBy
+    : [];
+
   return (
     <svg
       viewBox="0 0 600 160"
@@ -28,7 +39,7 @@ function RelationsMiniGraph({ currentProposal, links }) {
       </text>
 
       {/* parent */}
-      {links.parent && (
+      {links?.parent && (
         <>
           <circle cx="150" cy="80" r="16" className="fill-neutral-700" />
           <text
@@ -38,7 +49,7 @@ function RelationsMiniGraph({ currentProposal, links }) {
             dominantBaseline="central"
             className="fill-white text-[9px]"
           >
-            {links.parent.title.slice(0, 10)}
+            {links.parent.title?.slice(0, 10) ?? "Parent"}
           </text>
           <line
             x1="166"
@@ -53,7 +64,7 @@ function RelationsMiniGraph({ currentProposal, links }) {
       )}
 
       {/* forks */}
-      {links.forks?.slice(0, 3).map((p, idx) => {
+      {forks.slice(0, 3).map((p, idx) => {
         const x = 430;
         const y = 50 + idx * 30;
         return (
@@ -66,7 +77,7 @@ function RelationsMiniGraph({ currentProposal, links }) {
               dominantBaseline="central"
               className="fill-white text-[8px]"
             >
-              {p.title.slice(0, 8)}
+              {(p.title || "Fork").slice(0, 8)}
             </text>
             <line
               x1="320"
@@ -82,7 +93,7 @@ function RelationsMiniGraph({ currentProposal, links }) {
       })}
 
       {/* alternatives */}
-      {links.alternatives?.slice(0, 3).map((p, idx) => {
+      {alternatives.slice(0, 3).map((p, idx) => {
         const x = 300;
         const y = 20 + idx * 25;
         return (
@@ -95,7 +106,7 @@ function RelationsMiniGraph({ currentProposal, links }) {
               dominantBaseline="central"
               className="fill-white text-[7px]"
             >
-              {p.title.slice(0, 7)}
+              {(p.title || "Alt").slice(0, 7)}
             </text>
             <line
               x1="300"
@@ -110,7 +121,7 @@ function RelationsMiniGraph({ currentProposal, links }) {
       })}
 
       {/* supersedes / supersededBy (bas) */}
-      {links.supersedes?.slice(0, 2).map((p, idx) => {
+      {supersedes.slice(0, 2).map((p, idx) => {
         const x = 230 + idx * 40;
         const y = 130;
         return (
@@ -123,7 +134,7 @@ function RelationsMiniGraph({ currentProposal, links }) {
               dominantBaseline="central"
               className="fill-white text-[7px]"
             >
-              {p.title.slice(0, 7)}
+              {(p.title || "Sup.").slice(0, 7)}
             </text>
             <line
               x1="300"
@@ -131,6 +142,34 @@ function RelationsMiniGraph({ currentProposal, links }) {
               x2={x}
               y2={y - 10}
               className="stroke-purple-400"
+              strokeWidth="0.8"
+              markerEnd="url(#arrow)"
+            />
+          </g>
+        );
+      })}
+
+      {supersededBy.slice(0, 2).map((p, idx) => {
+        const x = 370 + idx * 40;
+        const y = 130;
+        return (
+          <g key={p.id}>
+            <circle cx={x} cy={y} r="10" className="fill-pink-500/80" />
+            <text
+              x={x}
+              y={y}
+              textAnchor="middle"
+              dominantBaseline="central"
+              className="fill-white text-[7px]"
+            >
+              {(p.title || "SupBy").slice(0, 7)}
+            </text>
+            <line
+              x1="300"
+              y1="100"
+              x2={x}
+              y2={y - 10}
+              className="stroke-pink-400"
               strokeWidth="0.8"
               markerEnd="url(#arrow)"
             />
@@ -155,21 +194,23 @@ function RelationsMiniGraph({ currentProposal, links }) {
   );
 }
 
+
 export default function ProposalRelationsPanel({
   currentProposal,
   links,
   onOpenRelationDialog,
 }) {
+  const navigate = useNavigate();
   return (
     <Card className="bg-neutral-900 border-neutral-700">
-      <CardHeader className="pb-3 flex flex-row items-center justify-between gap-3">
+      <CardHeader className="pb-3 flex flex-row flex-wrap items-center justify-between gap-3">
         <div>
           <CardTitle className="text-lg flex items-center gap-2">
             <GitBranch className="w-4 h-4 text-neutral-400" />
             Relations entre propositions
           </CardTitle>
           <CardDescription>
-            Variantes, alternatives et remplacements institutionnels.
+            Variantes, alternatives et remplacements.
           </CardDescription>
         </div>
         <Button
@@ -192,9 +233,12 @@ export default function ProposalRelationsPanel({
             {links.parent ? (
               <p className="text-neutral-300">
                 Dérivée de :{" "}
-                <span className="font-semibold">
+                <button
+                  onClick={() => navigate(`/proposals/${links.parent.id}`)}
+                  className="font-semibold text-left hover:underline text-xs text-blue-700 ml-2"
+                >
                   {links.parent.title}
-                </span>
+                </button>           
               </p>
             ) : (
               <p className="text-neutral-500 text-xs">
@@ -209,7 +253,14 @@ export default function ProposalRelationsPanel({
             {links.forks?.length ? (
               <ul className="list-disc list-inside space-y-1">
                 {links.forks.map((p) => (
-                  <li key={p.id}>{p.title}</li>
+                  <li key={p.id}>
+                  <button
+                    onClick={() => navigate(`/proposals/${p.id}`)}
+                    className="font-semibold text-left hover:underline text-xs text-blue-700 ml-2"
+                  >
+                    {p.title}
+                  </button>    
+                  </li>
                 ))}
               </ul>
             ) : (
@@ -224,7 +275,14 @@ export default function ProposalRelationsPanel({
             {links.alternatives?.length ? (
               <ul className="list-disc list-inside space-y-1">
                 {links.alternatives.map((p) => (
-                  <li key={p.id}>{p.title}</li>
+                  <li key={p.id}>
+                  <button
+                    onClick={() => navigate(`/proposals/${p.id}`)}
+                    className="font-semibold text-left hover:underline text-xs text-blue-700 ml-2"
+                  >
+                    {p.title}
+                  </button>   
+                  </li>
                 ))}
               </ul>
             ) : (
@@ -238,20 +296,31 @@ export default function ProposalRelationsPanel({
             <div className="font-semibold">Remplacements (supersedes)</div>
             {links.supersededBy?.length > 0 && (
               <p className="text-xs text-neutral-300">
-                Cette proposition a été remplacée par{" "}
-                <span className="font-semibold">
+                Cette proposition a été remplacée par : {" "}
+                {/* <span className="font-semibold">
                   {links.supersededBy[0].title}
-                </span>
+                </span> */}
+                  <button
+                    onClick={() => navigate(`/proposals/${links.supersededBy[0].id}`)}
+                    className="font-semibold text-left hover:underline text-xs text-blue-700 ml-2"
+                  >
+                    {links.supersededBy[0].title}
+                  </button>   
                 {links.supersededBy.length > 1 && " (plusieurs remplaçants)"}
-                .
               </p>
             )}
             {links.supersedes?.length > 0 && (
               <p className="text-xs text-neutral-300">
-                Elle remplace{" "}
-                <span className="font-semibold">
+                Elle remplace : {" "}
+                {/* <span className="font-semibold">
                   {links.supersedes[0].title}
-                </span>
+                </span> */}
+                  <button
+                    onClick={() => navigate(`/proposals/${links.supersedes[0].id}`)}
+                    className="font-semibold text-left hover:underline text-xs text-blue-700 ml-2"
+                  >
+                    {links.supersedes[0].title}
+                  </button>   
                 {links.supersedes.length > 1 && " et d’autres…"}
               </p>
             )}

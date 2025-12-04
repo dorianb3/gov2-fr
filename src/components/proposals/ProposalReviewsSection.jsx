@@ -24,7 +24,7 @@ export default function ProposalReviewsSection({
   const handleSubmit = () => {
     setError("");
     if (!reviewData.comment.trim()) {
-      setError("Merci de détailler ta review.");
+      setError("Merci de détailler votre review.");
       return;
     }
     onSubmitReview({
@@ -38,7 +38,7 @@ export default function ProposalReviewsSection({
   return (
     <section>
       <div className="mb-4">
-        <h2 className="text-2xl font-semibold">Reviews structurées</h2>
+        <h2 className="text-2xl font-semibold">Revues structurées</h2>
         <p className="text-sm text-neutral-400 mt-1">
           Analyses qualitatives par les citoyens, experts ou élus.
         </p>
@@ -77,12 +77,12 @@ export default function ProposalReviewsSection({
                   score: Number(e.target.value),
                 }))
               }
-              className="w-20 h-8 text-sm"
+              className="w-20 h-8 text-xs"
             />
           </div>
 
           <Textarea
-            placeholder="Propose une analyse argumentée (points forts, limites, conditions de réussite, etc.)"
+            placeholder="Proposez une analyse argumentée (points forts, limites, conditions de réussite, etc.)"
             value={reviewData.comment}
             onChange={(e) =>
               setReviewData((prev) => ({
@@ -99,7 +99,7 @@ export default function ProposalReviewsSection({
             className="bg-primary text-black w-fit"
             onClick={handleSubmit}
           >
-            Publier la review
+            Publier la revue
           </Button>
         </div>
 
@@ -109,8 +109,7 @@ export default function ProposalReviewsSection({
         <div className="space-y-4">
           {reviews.length === 0 && (
             <p className="text-sm text-neutral-400">
-              Aucune review pour le moment. Sois le premier à proposer une
-              analyse structurée.
+              Aucune revue pour le moment.
             </p>
           )}
 

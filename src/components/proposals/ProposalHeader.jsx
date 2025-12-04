@@ -3,15 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, GitBranch, Link2, Pencil } from "lucide-react";
 import ProposalStatusControl from "@/components/proposals/ProposalStatusControl";
-
+import FollowButton from "../common/FollowButton";
+import LikeButton from "../common/LikeButton";
 export default function ProposalHeader({
   proposal,
   issue,
   creator,
   creatorReputation,
   userRole,
-  isFollowing,
-  onToggleFollow,
+  // isFollowing,
+  // onToggleFollow,
   formatDateTime,
   flagsCount,
   proposalId,
@@ -19,17 +20,23 @@ export default function ProposalHeader({
   onEdit,
   onFork,
   onOpenRelationDialog,
+  currentUser,
 }) {
+
+  const isCreator = currentUser?.id === proposal.created_by;
+  const isModerator = userRole === "moderator";
+  const canEdit = isCreator || isModerator;
+
   return (
     <div className="space-y-4">
       {/* Titre + statut + status-control */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl font-semibold">{proposal.title}</h1>
-            <Badge variant="outline" className="uppercase text-xs">
+            <h1 className="text-xl font-semibold">{proposal.title}</h1>
+            {/* <Badge variant="outline" className="uppercase text-xs">
               {proposal.status}
-            </Badge>
+            </Badge> */}
             {flagsCount > 0 && (
               <Badge variant="destructive" className="text-xs">
                 {flagsCount} signalement(s)
@@ -67,14 +74,14 @@ export default function ProposalHeader({
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-3">
+        <div className="flex flex-col items-start gap-3">
           <ProposalStatusControl
             proposalId={proposalId}
             status={proposal.status}
             userRole={userRole}
             onStatusChanged={onStatusChanged}
           />
-          <div className="text-sm text-neutral-300 text-right">
+          <div className="text-xs text-neutral-300 text-left">
             Par{" "}
             <span className="font-semibold text-neutral-100">
               {creator?.username || "Utilisateur inconnu"}
@@ -100,28 +107,21 @@ export default function ProposalHeader({
 
       {/* Actions principales : suivre / éditer / forker / lier */}
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          size="sm"
-          variant={isFollowing ? "secondary" : "default"}
-          onClick={onToggleFollow}
-        >
-          <Star
-            className={`w-4 h-4 mr-1 ${
-              isFollowing ? "fill-yellow-400 text-yellow-400" : ""
-            }`}
-          />
-          {isFollowing ? "Se désabonner" : "Suivre cette proposition"}
-        </Button>
+        <FollowButton targetType="proposal" targetId={proposal.id} size="xs" />
+        <LikeButton targetType="proposal" targetId={proposal.id} size="sm" variant="ghost"/>
 
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onEdit}
-          title="Modifier le contenu de la proposition"
-        >
-          <Pencil className="w-4 h-4 mr-1" />
-          Modifier
-        </Button>
+        {/* ✏️ Modifier → seulement si créateur ou modérateur */}
+        {canEdit && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onEdit}
+            title="Modifier le contenu de la proposition"
+          >
+            <Pencil className="w-4 h-4 mr-1" />
+            Modifier
+          </Button>
+        )}
 
         <Button
           size="sm"
@@ -133,15 +133,18 @@ export default function ProposalHeader({
           Créer une variante
         </Button>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onOpenRelationDialog}
-          title="Lier cette proposition à une autre (alternative, supersedes, etc.)"
-        >
-          <Link2 className="w-4 h-4 mr-1" />
-          Gérer les relations
-        </Button>
+        {/* 🔗 Relations → réservé au créateur + modérateurs */}
+        {canEdit && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onOpenRelationDialog}
+            title="Gérer les relations de cette proposition"
+          >
+            <Link2 className="w-4 h-4 mr-1" />
+            Gérer les relations
+          </Button>
+        )}
       </div>
     </div>
   );
