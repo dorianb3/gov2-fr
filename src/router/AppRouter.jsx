@@ -12,7 +12,7 @@ import Agora from "../pages/Agora/Agora"
 // Détail d'une proposition
 import ProposalDetail from "../pages/ProposalDetail"
 
-// NOUVEAU : profil
+import Activity from "../pages/Activity"
 import Profile from "../pages/Profile"  // <--- AJOUT
 
 const router = createBrowserRouter([
@@ -33,7 +33,7 @@ const router = createBrowserRouter([
       { path: "proposals/:id", element: <ProposalDetail /> },
 
       // ACTIVITY FEED (à implémenter plus tard)
-      // { path: "activity", element: <Activity /> },
+      { path: "activity", element: <Activity /> },
 
       // PROFILE PUBLIC + MON PROFIL
       { path: "profile", element: <Profile /> },       // mon profil

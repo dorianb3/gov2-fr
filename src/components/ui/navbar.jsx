@@ -15,9 +15,11 @@ import ThemeToggle from "../ThemeToggle"
 
 export default function Navbar() {
   const navItems = [
-    { label: "Home", to: "/" },
     { label: "Agora", to: "/agora" },
-    { label: "Activity", to: "/activity" },
+    { label: "Activités", to: "/activity" },
+    { label: "Infos", to: "/" },
+    { label: "Données", to: "/" },
+    { label: "A propos", to: "/" },
   ]
 
   return (
@@ -26,7 +28,7 @@ export default function Navbar() {
 
         {/* LEFT - LOGO */}
         <Link to="/" className="font-semibold text-lg tracking-tight">
-          CivicHub
+          Gov2.0
         </Link>
 
         {/* DESKTOP NAV */}

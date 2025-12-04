@@ -6,7 +6,7 @@
 @layer base {
   :root {
     /* LIGHT MODE (optionnel) */
-    --background: 0 0% 98%; /* blanc légèrement cassé */
+    --background: 233, 15%, 88%; /* blanc légèrement cassé */
     --foreground: 222 84% 6%; /* quasi noir */
 
     --card: 0 0% 100%; /* card light */

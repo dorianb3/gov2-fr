@@ -51,7 +51,7 @@ export default function UserMenu() {
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
-        
+
         <DropdownMenuItem>
           {/* ... autres éléments du menu ... */}
           <Link
@@ -66,7 +66,7 @@ export default function UserMenu() {
         <DropdownMenuSeparator />
 
         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
-          Logout
+          Se déconnecter
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -10,7 +10,7 @@ export async function getPersonalizedFeed() {
   const user = await getCurrentUser();
   if (!user) throw new Error("AUTH_REQUIRED");
 
-  const { data, error } = await supabase.rpc("get_feed_for_user", {
+  const { data, error } = await supabase.rpc("get_feed_for_user_v2", {
     _uid: user.id,
   });
 
